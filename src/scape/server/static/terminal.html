@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SSH Terminal</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" >
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #terminal {
+            width: 100%;
+            height: 100%;
+        }
+
+        #status {
+            position: fixed;
+            right: 10px;
+            top: 8px;
+            z-index: 1000;
+
+            padding: 4px 8px;
+
+            font-family: monospace;
+            font-size: 12px;
+
+            background: rgba(0, 0, 0, 0.65);
+            color: #aaa;
+
+            border-radius: 4px;
+        }
+
+        #status.connected {
+            color: #7cff7c;
+        }
+
+        #status.error {
+            color: #ff7777;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="status">connecting...</div>
+<div id="terminal"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xterm@4.5.0/lib/xterm.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.3.0/lib/xterm-addon-fit.js"></script>
+
+<script>
+
+const statusElement = document.getElementById("status");
+
+function setStatus(text, state = "") {
+    statusElement.textContent = text;
+    statusElement.className = state;
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * Session ID
+ * ------------------------------------------------------------
+ */
+
+// const params = new URLSearchParams(window.location.search);
+
+// const sessionId = params.get("session_id");
+
+// if (!sessionId) {
+//     setStatus("missing session_id", "error");
+//     throw new Error("Missing session_id");
+// }
+
+const path = window.location.pathname;
+
+const parts = path.split("/");
+
+const sessionId = decodeURIComponent(parts[parts.length - 1]);
+
+if (!sessionId) {
+    setStatus("missing session id", "error");
+    throw new Error("Missing session id");
+}
+
+
+/*
+ * ------------------------------------------------------------
+ * xterm
+ * ------------------------------------------------------------
+ */
+
+const terminal = new Terminal({
+    cursorBlink: true,
+
+    fontFamily:
+        '"JetBrains Mono", "SFMono-Regular", Consolas, monospace',
+
+    fontSize: 14,
+
+    scrollback: 10000,
+
+    convertEol: true,
+
+    theme: {
+        background: "#000000",
+        foreground: "#d0d0d0",
+        cursor: "#ffffff",
+        selectionBackground: "#444444"
+    }
+});
+
+
+const fitAddon = new FitAddon.FitAddon();
+
+terminal.loadAddon(fitAddon);
+
+terminal.open( document.getElementById("terminal") );
+
+fitAddon.fit();
+
+terminal.focus();
+
+
+/*
+ * ------------------------------------------------------------
+ * WebSocket URL
+ *
+ * Derive protocol from the page itself:
+ *
+ * http  -> ws
+ * https -> wss
+ * ------------------------------------------------------------
+ */
+
+const wsProtocol =
+    window.location.protocol === "https:"
+        ? "wss:"
+        : "ws:";
+
+const wsUrl =
+    `${wsProtocol}//${window.location.host}` +
+    `/sessions/${encodeURIComponent(sessionId)}/terminal`;
+
+console.log("Connecting:", wsUrl);
+
+
+/*
+ * ------------------------------------------------------------
+ * WebSocket
+ * ------------------------------------------------------------
+ */
+
+const socket = new WebSocket(wsUrl);
+
+
+/*
+ * We use binary websocket frames for terminal input/output.
+ */
+
+socket.binaryType = "arraybuffer";
+
+
+socket.onopen = () => {
+
+    setStatus("connected", "connected");
+
+    terminal.focus();
+
+    /*
+     * Inform the server of the initial terminal dimensions.
+     *
+     * This is a JSON text frame, while terminal input/output
+     * itself uses binary frames.
+     */
+
+    sendResize();
+};
+
+
+socket.onclose = (event) => {
+
+    setStatus(
+        `disconnected (${event.code})`,
+        "error"
+    );
+
+    terminal.write(
+        "\r\n\x1b[31mConnection closed.\x1b[0m\r\n"
+    );
+};
+
+
+socket.onerror = () => {
+
+    setStatus(
+        "websocket error",
+        "error"
+    );
+};
+
+
+socket.onmessage = (event) => {
+
+    if (typeof event.data === "string") {
+        /*
+         * Reserved for future control messages.
+         */
+        return;
+    }
+
+    const data = new Uint8Array(event.data);
+
+    terminal.write(data);
+};
+
+
+/*
+ * ------------------------------------------------------------
+ * Terminal → SSH
+ * ------------------------------------------------------------
+ */
+
+terminal.onData((data) => {
+
+    if (socket.readyState !== WebSocket.OPEN) {
+        return;
+    }
+
+    /*
+     * Encode terminal input as UTF-8 bytes.
+     */
+
+    const bytes =
+        new TextEncoder().encode(data);
+
+    socket.send(bytes);
+});
+
+
+/*
+ * ------------------------------------------------------------
+ * Resize
+ * ------------------------------------------------------------
+ */
+
+function sendResize() {
+
+    if (socket.readyState !== WebSocket.OPEN) {
+        return;
+    }
+
+    fitAddon.fit();
+
+    const message = JSON.stringify({
+        type: "resize",
+        rows: terminal.rows,
+        cols: terminal.cols
+    });
+
+    socket.send(message);
+}
+
+
+window.addEventListener(
+    "resize",
+    () => {
+        sendResize();
+    }
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Keyboard convenience
+ * ------------------------------------------------------------
+ */
+
+window.addEventListener(
+    "keydown",
+    () => {
+        terminal.focus();
+    }
+);
+
+
+/*
+ * ------------------------------------------------------------
+ * Initial information
+ * ------------------------------------------------------------
+ */
+
+terminal.writeln(
+    `\x1b[90mSSH session: ${sessionId}\x1b[0m`
+);
+
+terminal.writeln("");
+
+</script>
+
+</body>
+</html>

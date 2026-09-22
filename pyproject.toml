@@ -1,0 +1,25 @@
+[project]
+name = "scape"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Arnav Das", email = "arnav.das88@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "paramiko>=5.0.0",
+]
+
+[project.scripts]
+scape = "scape:main"
+
+[project.optional-dependencies]
+server = [
+    "fastapi[standard]>=0.141.1",
+    "pydantic>=2.13.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
