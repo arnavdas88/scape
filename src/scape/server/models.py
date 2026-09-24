@@ -1,7 +1,7 @@
 
 import time
 from typing import List
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 import paramiko
 
@@ -12,6 +12,12 @@ class SSHCredential:
     password: str | None = None
     pkey: paramiko.PKey | None = None
 
+    def to_api(self, ):
+        return {
+            "username": self.username,
+            "auth": "password" if ( self.username and self.password ) else "key"
+        }
+
 
 @dataclass
 class SSHHost:
@@ -21,6 +27,8 @@ class SSHHost:
     credential: str = ""
     allowed: bool = True
 
+    def to_api(self, ):
+        return asdict(self)
 
 @dataclass
 class SSHSession:

@@ -16,6 +16,7 @@ scape = "scape:main"
 
 [project.optional-dependencies]
 server = [
+    "uvicorn>=0.52.4",
     "fastapi[standard]>=0.141.1",
     "pydantic>=2.13.5",
 ]

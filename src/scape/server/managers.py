@@ -21,6 +21,12 @@ class CredentialStore:
     def get(self, name: str) -> SSHCredential:
         return self._credentials[name]
 
+    def to_api(self,):
+        return {
+            cred_name: cred_obj.to_api()
+            for cred_name, cred_obj in self._credentials.items()
+        }
+
 class HostStore:
     def __init__(self):
         self._hosts: dict[str, SSHHost] = {}
@@ -35,6 +41,12 @@ class HostStore:
             raise PermissionError(f"Host {name} is not allowed")
 
         return host
+
+    def to_api(self,):
+        return {
+            host_name: host_obj.to_api()
+            for host_name, host_obj in self._hosts.items()
+        }
 
 class SSHSessionManager:
     def __init__( self, credentials: CredentialStore, hosts: HostStore, ):
@@ -149,3 +161,4 @@ class SSHSessionManager:
                 client.close()
             except Exception:
                 pass
+

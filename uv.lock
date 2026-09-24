@@ -1064,6 +1064,7 @@ dependencies = [
 server = [
     { name = "fastapi", extra = ["standard"] },
     { name = "pydantic" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
@@ -1071,6 +1072,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], marker = "extra == 'server'", specifier = ">=0.141.1" },
     { name = "paramiko", specifier = ">=5.0.0" },
     { name = "pydantic", marker = "extra == 'server'", specifier = ">=2.13.5" },
+    { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.52.4" },
 ]
 provides-extras = ["server"]
 
