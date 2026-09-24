@@ -2,13 +2,13 @@
 
 The scape agent
 
-# Install
+## Install
 
 ```sh
 pip install git+https://github.com/arnavdas88/scape
 ```
 
-# Use as a package 
+## Use as a package 
 
 Import scape 
 ```py
