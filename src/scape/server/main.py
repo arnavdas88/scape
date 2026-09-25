@@ -17,6 +17,9 @@ from scape.server.base import hosts, credentials, sessions
 from scape.server.v1.management import management_sub_router as management_sub_router
 from scape.server.v1.ui import ui_sub_router as ui_sub_router
 
+import importlib.util
+scalar_spec = importlib.util.find_spec("scalar_fastapi")
+
 BASE_DIR = Path(__file__).resolve().parent
 
 @asynccontextmanager
@@ -34,6 +37,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(management_sub_router)
 app.include_router(ui_sub_router)
+
+if scalar_spec:
+    from scalar_fastapi import add_scalar_reference, Theme
+    add_scalar_reference(app, route="/docs/scalar", theme=Theme.BLUE_PLANET)
 
 @app.get("/")
 def index():
