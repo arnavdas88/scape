@@ -59,6 +59,28 @@ class SSH:
     self.connect()
 
   @property
+  def is_connected(self, ) -> bool | None:
+    if not self.conn:
+      return False
+
+    transport : Optional[Transport] = self.conn.get_transport()
+      
+    # Check if connection is online
+    if transport and not transport.is_active():
+        warnings.warn(f"Reconnecting to the jumbpox.")
+        self.connect()
+        transport : Optional[Transport] = self.conn.get_transport()
+
+    return transport and transport.is_active()
+
+  @property
+  def host_keys(self, ) -> HostKeys:
+    if not self.conn:
+      raise NotConnected()
+
+    return self.conn.get_host_keys()
+
+  @property
   def transport(self, ) -> Transport:
     if not self.conn:
       raise NotConnected()
@@ -76,6 +98,13 @@ class SSH:
 
     return transport
 
+  @property
+  def sftp(self, ) -> SFTPClient:
+    if not self.conn:
+      raise NotConnected()
+
+    return self.conn.open_sftp()
+  
   def connect(self, ):
     self.conn = paramiko.SSHClient()
     self.conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
