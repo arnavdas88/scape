@@ -1,0 +1,16 @@
+Value user (\S+)
+Value pid (\d+)
+Value cpu_percent ([\d.]+)
+Value mem_percent ([\d.]+)
+Value vsz (\d+)
+Value rss (\d+)
+Value tty (\S+)
+Value stat (\S+)
+Value start (\S+)
+Value time (\S+)
+Value command (.+)
+
+Start
+  ^USER\s+PID\s+%CPU\s+%MEM\s+VSZ\s+RSS\s+TTY\s+STAT\s+START\s+TIME\s+COMMAND\s*$$ -> Record
+  ^${user}\s+${pid}\s+${cpu_percent}\s+${mem_percent}\s+${vsz}\s+${rss}\s+${tty}\s+${stat}\s+${start}\s+${time}\s+${command}$$ -> Record
+  ^\s*$$

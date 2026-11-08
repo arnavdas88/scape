@@ -1,0 +1,12 @@
+Value netid (\S+)
+Value state (\S+)
+Value recv_q (\d+)
+Value send_q (\d+)
+Value local_address (\S+(?::\S+)|(?:\S+)\s+\d+)
+Value peer_address (\S+(?::\S+)|(?:\S+)\s+\d+)
+Value process (.*)
+
+Start
+  ^Netid\s+State\s+Recv-Q\s+Send-Q\s+Local\s+Address:Port\s+Peer\s+Address:Port\s+Process\s*$$
+  ^${netid}\s+${state}\s+${recv_q}\s+${send_q}\s+${local_address}\s+${peer_address}(?:\s+${process})?\s*$$ -> Record
+  ^\s*$$

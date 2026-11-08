@@ -127,13 +127,46 @@ class SSH:
       warnings.warn("SSH not connected")
 
   def exec(self, command: str, bufsize: int = -1, timeout: float | None = None,
-           get_pty:bool = False, environment: Mapping[str, str] | None = None) -> tuple[ChannelStdinFile, ChannelFile, ChannelStderrFile]:
+           get_pty:bool = False, environment: Mapping[str, str] | None = None, sudo: bool = False) -> tuple[ChannelStdinFile, ChannelFile, ChannelStderrFile]:
 
     if not self.conn:
       raise NotConnected()
 
-    return self.conn.exec_command(command=command, bufsize=bufsize, timeout=timeout, 
-                                    get_pty=get_pty, environment=environment)
+
+    # Open a new channel
+    transport = self.conn.get_transport()
+    if not transport:
+      raise UnableToOpenTransport("Unable to open transport for SSH")
+
+    channel = transport.open_session()
+    if get_pty:
+        channel.get_pty()
+
+    channel.settimeout(timeout)
+
+    if environment:
+        channel.update_environment(environment)
+
+    if sudo:
+        if self.password:
+          command = f"sudo -S -p '' -- {command}"
+        else:
+          command = f"sudo -n -- {command}"
+
+    channel.exec_command(command)
+    stdin = channel.makefile_stdin("wb", bufsize)
+    stdout = channel.makefile("r", bufsize)
+    stderr = channel.makefile_stderr("r", bufsize)
+
+    if sudo and self.password is not None:
+        stdin.write(self.password + "\n")
+        stdin.flush()
+
+    return stdin, stdout, stderr
+
+    # shell = self.conn.invoke_shell()
+    # return self.conn.exec_command(command=command, bufsize=bufsize, timeout=timeout, 
+    #                                 get_pty=get_pty, environment=environment)
 
   def pty_channel(self, term: str, height: int, width: int) -> Channel:
     if not self.conn:
@@ -162,13 +195,14 @@ class SSH:
     )
 
   def __call__(self, command: str, bufsize: int = -1, timeout: float | None = None,
-           get_pty:bool = False, environment: Mapping[str, str] | None = None):
+           get_pty:bool = False, environment: Mapping[str, str] | None = None, sudo: bool = False):
     return self.exec(
       command = command, 
       bufsize = bufsize, 
       timeout = timeout,
       get_pty = get_pty,
       environment = environment,
+      sudo = sudo,
     )
 
   def __enter__(self, ):
