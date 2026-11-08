@@ -26,7 +26,7 @@ class SSCommand(RemoteCommand):
         for index, sock_conn in enumerate(result.data):
             result.data[index]["recv_q"] = int(result.data[index]["recv_q"])
             result.data[index]["send_q"] = int(result.data[index]["send_q"])
-            # result.data[index]["process"]
+            result.data[index]["process"] = result.data[index]["process"].strip()
             # pass
         return super().post_execute(result)
 
