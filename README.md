@@ -30,7 +30,7 @@ host_b = host_a.ssh(hostname = "yyy.yyy.yyy.yyy", port=22, username="user_b", pa
 host_c = host_b.ssh(hostname = "zzz.zzz.zzz.zzz", port=22, username="user_c", password="AnotherPassword")
 ```
 
-Execute commands
+Execute commands manually
 ```py
 stdin, stdout, stderr = host_a("ip addr")
 host_a_output = stdout.readlines()
@@ -43,4 +43,17 @@ print(host_b_output)
 stdin, stdout, stderr = host_c("ip addr")
 host_c_output = stdout.readlines()
 print(host_c_output)
+```
+
+Execute commands through command interface
+```py
+from scape.contrib.linux_commands import IPAddressCommand, SSCommand, IPRouteCommand
+
+ip_addr_command = IPAddressCommand()
+ss_command = SSCommand(sudo=True, )
+ip_route_command = IPRouteCommand()
+
+ip_addr_result = ip_addr_command.execute(host_b)
+ss_result = ss_command.execute(host_b)
+ip_route_result = ip_route_command.execute(host_b)
 ```
